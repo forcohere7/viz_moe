@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mixture of Experts Neural Network</title>
+    <title>Interactive Mixture of Experts Neural Network</title>
+    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAA0SURBVCh7tY4xAQAwDMP4/4+7Q2BguAEBh4ABKKB3eQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAL4BA4cHAAAAAElFTkSuQmCC">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -13,36 +15,76 @@
                         'pulse-slow': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                         'bounce-slow': 'bounce 2s infinite',
                         'flow': 'flow 2s ease-in-out infinite',
+                        'fade-in': 'fadeIn 0.5s ease-in',
+                        'glow': 'glow 1.5s ease-in-out infinite',
                     },
                     keyframes: {
                         flow: {
                             '0%, 100%': { opacity: '0.3' },
                             '50%': { opacity: '1' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        glow: {
+                            '0%, 100%': { boxShadow: '0 0 5px rgba(20, 184, 166, 0.5)' },
+                            '50%': { boxShadow: '0 0 20px rgba(20, 184, 166, 1)' },
                         }
+                    },
+                    colors: {
+                        'neural-blue': '#3B82F6',
+                        'neural-purple': '#8B5CF6',
+                        'neural-teal': '#14B8A6',
                     }
                 }
             }
         }
     </script>
+    <style>
+        .node-animation {
+            transition: all 0.3s ease;
+        }
+        .node-animation:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+        .connection-line {
+            stroke: #3B82F6;
+            stroke-width: 2;
+            stroke-opacity: 0.3;
+            transition: stroke-opacity 0.3s;
+        }
+        .connection-line.active {
+            stroke-opacity: 1;
+            stroke: #8B5CF6;
+        }
+        canvas {
+            max-width: 100%;
+        }
+        .active-expert {
+            animation: glow 1.5s ease-in-out infinite;
+        }
+    </style>
 </head>
-<body class="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-800 min-h-screen text-white">
+<body class="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-800 min-h-screen text-white font-sans">
     <!-- Header -->
-    <div class="container mx-auto px-4 py-8">
-        <div class="text-center mb-8">
-            <h1 class="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-4">
-                Mixture of Experts Neural Network
+    <div class="container mx-auto px-4 py-12">
+        <div class="text-center mb-12 animate-fade-in">
+            <h1 class="text-5xl font-extrabold bg-gradient-to-r from-neural-blue to-neural-purple bg-clip-text text-transparent mb-4">
+                Interactive Mixture of Experts
             </h1>
-            <p class="text-gray-300 text-lg max-w-3xl mx-auto">
-                An interactive demonstration of how MoE architecture routes inputs through specialized expert networks based on learned gating functions.
+            <p class="text-gray-200 text-lg max-w-3xl mx-auto">
+                Explore how a Mixture of Experts (MoE) neural network dynamically routes inputs through specialized experts using an interactive gating mechanism.
             </p>
         </div>
 
         <!-- Control Panel -->
-        <div class="bg-slate-800/50 backdrop-blur-sm rounded-xl p-6 mb-8 border border-slate-700">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-slate-800/70 backdrop-blur-md rounded-2xl p-8 mb-12 border border-slate-600 shadow-xl animate-fade-in">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Input Pattern</label>
-                    <select id="inputPattern" class="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500">
+                    <label class="block text-sm font-medium text-gray-200 mb-2">Input Pattern</label>
+                    <select id="inputPattern" class="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-neural-blue transition-all">
                         <option value="linear">Linear Pattern</option>
                         <option value="quadratic">Quadratic Pattern</option>
                         <option value="trigonometric">Trigonometric Pattern</option>
@@ -51,136 +93,167 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Number of Experts</label>
-                    <input type="range" id="numExperts" min="2" max="6" value="4" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
-                    <div class="text-center text-sm text-gray-400 mt-1">
+                    <label class="block text-sm font-medium text-gray-200 mb-2">Number of Experts</label>
+                    <input type="range" id="numExperts" min="2" max="8" value="4" class="w-full h-2 bg-slate-700 rounded-lg cursor-pointer accent-neural-blue">
+                    <div class="text-center text-sm text-gray-300 mt-2">
                         <span id="expertCount">4</span> Experts
                     </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Top-K Selection</label>
-                    <input type="range" id="topK" min="1" max="4" value="2" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
-                    <div class="text-center text-sm text-gray-400 mt-1">
+                    <label class="block text-sm font-medium text-gray-200 mb-2">Top-K Selection</label>
+                    <input type="range" id="topK" min="1" max="4" value="2" class="w-full h-2 bg-slate-700 rounded-lg cursor-pointer accent-neural-purple">
+                    <div class="text-center text-sm text-gray-300 mt-2">
                         Top <span id="topKCount">2</span> Experts
                     </div>
                 </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-200 mb-2">Learning Rate</label>
+                    <input type="range" id="learningRate" min="0.001" max="0.1" step="0.001" value="0.01" class="w-full h-2 bg-slate-700 rounded-lg cursor-pointer accent-neural-teal">
+                    <div class="text-center text-sm text-gray-300 mt-2">
+                        <span id="learningRateValue">0.010</span>
+                    </div>
+                </div>
             </div>
-            <div class="flex justify-center mt-6 space-x-4">
-                <button id="runForward" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105">
-                    Run Forward Pass
+            <div class="flex flex-wrap justify-center mt-8 space-x-4 space-y-4 md:space-y-0">
+                <button id="runForward" class="px-6 py-3 bg-gradient-to-r from-neural-blue to-neural-purple rounded-lg font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-md">
+                    Run Full Forward Pass
                 </button>
-                <button id="trainNetwork" class="px-6 py-3 bg-gradient-to-r from-green-500 to-teal-600 rounded-lg font-semibold hover:from-green-600 hover:to-teal-700 transition-all duration-300 transform hover:scale-105">
+                <button id="runGating" class="px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-lg font-semibold hover:from-yellow-600 hover:to-orange-700 transition-all duration-300 transform hover:scale-105 shadow-md">
+                    Run Gating Only
+                </button>
+                <button id="runExperts" class="px-6 py-3 bg-gradient-to-r from-cyan-500 to-teal-600 rounded-lg font-semibold hover:from-cyan-600 hover:to-teal-700 transition-all duration-300 transform hover:scale-105 shadow-md">
+                    Run Experts Only
+                </button>
+                <button id="runCombine" class="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg font-semibold hover:from-purple-600 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 shadow-md">
+                    Combine Outputs
+                </button>
+                <button id="trainNetwork" class="px-6 py-3 bg-gradient-to-r from-neural-teal to-green-600 rounded-lg font-semibold hover:from-teal-600 hover:to-green-700 transition-all duration-300 transform hover:scale-105 shadow-md">
                     Train Network
                 </button>
-                <button id="resetNetwork" class="px-6 py-3 bg-gradient-to-r from-red-500 to-pink-600 rounded-lg font-semibold hover:from-red-600 hover:to-pink-700 transition-all duration-300 transform hover:scale-105">
-                    Reset Weights
+                <button id="resetNetwork" class="px-6 py-3 bg-gradient-to-r from-red-500 to-pink-600 rounded-lg font-semibold hover:from-red-600 hover:to-pink-700 transition-all duration-300 transform hover:scale-105 shadow-md">
+                    Reset Network
                 </button>
             </div>
         </div>
 
         <!-- Network Visualization -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
             <!-- Input Layer -->
-            <div class="bg-slate-800/30 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
-                <h3 class="text-xl font-bold text-blue-400 mb-4 text-center">Input Layer</h3>
-                <div id="inputLayer" class="space-y-3">
-                    <!-- Input nodes will be generated here -->
-                </div>
-                <div class="mt-4 p-3 bg-slate-700/50 rounded-lg">
-                    <div class="text-sm text-gray-300">Current Input:</div>
-                    <div id="currentInput" class="text-xs font-mono text-green-400 break-all"></div>
+            <div class="bg-slate-800/50 backdrop-blur-md rounded-2xl p-6 border border-slate-600 shadow-lg animate-fade-in">
+                <h3 class="text-xl font-bold text-neural-blue mb-4 text-center">Input Layer</h3>
+                <canvas id="inputCanvas" class="w-full h-64 mb-4"></canvas>
+                <div class="p-3 bg-slate-700/50 rounded-lg">
+                    <div class="text-sm text-gray-200">Current Input:</div>
+                    <div id="currentInput" class="text-xs font-mono text-neural-blue break-all"></div>
                 </div>
             </div>
 
             <!-- MoE Architecture -->
-            <div class="bg-slate-800/30 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
-                <h3 class="text-xl font-bold text-purple-400 mb-4 text-center">Mixture of Experts</h3>
-                
-                <!-- Gating Network -->
+            <div class="bg-slate-800/50 backdrop-blur-md rounded-2xl p-6 border border-slate-600 shadow-lg animate-fade-in">
+                <h3 class="text-xl font-bold text-neural-purple mb-4 text-center">Mixture of Experts</h3>
                 <div class="mb-6">
                     <h4 class="text-lg font-semibold text-yellow-400 mb-3">Gating Network</h4>
-                    <div id="gatingNetwork" class="bg-slate-700/50 rounded-lg p-4">
-                        <div class="text-sm text-gray-300 mb-2">Expert Weights:</div>
-                        <div id="gatingWeights" class="space-y-1">
-                            <!-- Gating weights will be shown here -->
-                        </div>
-                    </div>
+                    <canvas id="gatingCanvas" class="w-full h-32 mb-4"></canvas>
+                    <div id="gatingWeights" class="space-y-1 text-xs"></div>
                 </div>
-
-                <!-- Expert Networks -->
                 <div>
-                    <h4 class="text-lg font-semibold text-cyan-400 mb-3">Expert Networks</h4>
-                    <div id="expertNetworks" class="space-y-3">
-                        <!-- Expert networks will be generated here -->
-                    </div>
+                    <h4 class="text-lg font-semibold text-neural-teal mb-3">Expert Networks</h4>
+                    <div id="expertNetworks" class="space-y-3"></div>
+                </div>
+                <div class="mt-6 p-3 bg-slate-700/50 rounded-lg">
+                    <div class="text-sm text-gray-200">Expert Outputs:</div>
+                    <div id="expertOutputs" class="text-xs font-mono text-cyan-400"></div>
                 </div>
             </div>
 
             <!-- Output Layer -->
-            <div class="bg-slate-800/30 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
-                <h3 class="text-xl font-bold text-green-400 mb-4 text-center">Output Layer</h3>
-                <div id="outputLayer" class="space-y-3 mb-4">
-                    <!-- Output nodes will be generated here -->
-                </div>
+            <div class="bg-slate-800/50 backdrop-blur-md rounded-2xl p-6 border border-slate-600 shadow-lg animate-fade-in">
+                <h3 class="text-xl font-bold text-neural-teal mb-4 text-center">Output Layer</h3>
+                <canvas id="outputCanvas" class="w-full h-64 mb-4"></canvas>
                 <div class="space-y-4">
                     <div class="p-3 bg-slate-700/50 rounded-lg">
-                        <div class="text-sm text-gray-300">Final Output:</div>
-                        <div id="finalOutput" class="text-lg font-mono text-green-400"></div>
+                        <div class="text-sm text-gray-200">Final Output:</div>
+                        <div id="finalOutput" class="text-lg font-mono text-neural-teal"></div>
                     </div>
                     <div class="p-3 bg-slate-700/50 rounded-lg">
-                        <div class="text-sm text-gray-300">Active Experts:</div>
-                        <div id="activeExperts" class="text-sm text-cyan-400"></div>
+                        <div class="text-sm text-gray-200">Active Experts:</div>
+                        <div id="activeExperts" class="text-sm text-neural-purple font-bold"></div>
                     </div>
                     <div class="p-3 bg-slate-700/50 rounded-lg">
-                        <div class="text-sm text-gray-300">Loss:</div>
+                        <div class="text-sm text-gray-200">Loss:</div>
                         <div id="currentLoss" class="text-lg font-mono text-yellow-400">0.000</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Performance Metrics -->
-        <div class="mt-8 bg-slate-800/30 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
-            <h3 class="text-xl font-bold text-orange-400 mb-4">Performance Metrics</h3>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div class="bg-slate-700/50 rounded-lg p-4 text-center">
-                    <div class="text-2xl font-bold text-blue-400" id="totalParams">0</div>
-                    <div class="text-sm text-gray-400">Total Parameters</div>
+        <!-- Comparison Mode -->
+        <div class="bg-slate-800/50 backdrop-blur-md rounded-2xl p-6 mb-12 border border-slate-600 shadow-lg animate-fade-in">
+            <h3 class="text-xl font-bold text-orange-400 mb-4">Comparison Mode</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-slate-700/50 rounded-lg p-4">
+                    <h4 class="text-lg font-semibold text-neural-blue mb-2">With Top-K Selection</h4>
+                    <div class="text-sm text-gray-300">Active Parameters: <span id="topKParams">0</span></div>
+                    <div class="text-sm text-gray-300">Output: <span id="topKOutput">[0, 0]</span></div>
+                    <div class="text-sm text-gray-300">Loss: <span id="topKLoss">0.000</span></div>
                 </div>
-                <div class="bg-slate-700/50 rounded-lg p-4 text-center">
-                    <div class="text-2xl font-bold text-green-400" id="activeParams">0</div>
-                    <div class="text-sm text-gray-400">Active Parameters</div>
-                </div>
-                <div class="bg-slate-700/50 rounded-lg p-4 text-center">
-                    <div class="text-2xl font-bold text-purple-400" id="efficiency">0%</div>
-                    <div class="text-sm text-gray-400">Efficiency</div>
-                </div>
-                <div class="bg-slate-700/50 rounded-lg p-4 text-center">
-                    <div class="text-2xl font-bold text-yellow-400" id="iterations">0</div>
-                    <div class="text-sm text-gray-400">Training Iterations</div>
+                <div class="bg-slate-700/50 rounded-lg p-4">
+                    <h4 class="text-lg font-semibold text-neural-purple mb-2">Without Top-K (All Experts)</h4>
+                    <div class="text-sm text-gray-300">Active Parameters: <span id="allParams">0</span></div>
+                    <div class="text-sm text-gray-300">Output: <span id="allOutput">[0, 0]</span></div>
+                    <div class="text-sm text-gray-300">Loss: <span id="allLoss">0.000</span></div>
                 </div>
             </div>
         </div>
 
+        <!-- Performance Metrics and Loss Plot -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+            <div class="bg-slate-800/50 backdrop-blur-md rounded-2xl p-6 border border-slate-600 shadow-lg animate-fade-in">
+                <h3 class="text-xl font-bold text-orange-400 mb-4">Performance Metrics</h3>
+                <div class="grid grid-cols- звучать1 md:grid-cols-2 gap-4">
+                    <div class="bg-slate-700/50 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-neural-blue" id="totalParams">0</div>
+                        <div class="text-sm text-gray-300">Total Parameters</div>
+                    </div>
+                    <div class="bg-slate-700/50 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-neural-teal" id="activeParams">0</div>
+                        <div class="text-sm text-gray-300">Active Parameters</div>
+                    </div>
+                    <div class="bg-slate-700/50 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-neural-purple" id="efficiency">0%</div>
+                        <div class="text-sm text-gray-300">Efficiency</div>
+                    </div>
+                    <div class="bg-slate-700/50 rounded-lg p-4 text-center">
+                        <div class="text-2xl font-bold text-yellow-400" id="iterations">0</div>
+                        <div class="text-sm text-gray-300">Training Iterations</div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-slate-800/50 backdrop-blur-md rounded-2xl p-6 border border-slate-600 shadow-lg animate-fade-in">
+                <h3 class="text-xl font-bold text-orange-400 mb-4">Training Loss</h3>
+                <canvas id="lossChart" class="w-full h-64"></canvas>
+            </div>
+        </div>
+
         <!-- Information Panel -->
-        <div class="mt-8 bg-slate-800/30 backdrop-blur-sm rounded-xl p-6 border border-slate-700">
+        <div class="bg-slate-800/50 backdrop-blur-md rounded-2xl p-6 border border-slate-600 shadow-lg animate-fade-in">
             <h3 class="text-xl font-bold text-pink-400 mb-4">How Mixture of Experts Works</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-300">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-200">
                 <div>
-                    <h4 class="font-semibold text-blue-400 mb-2">1. Gating Network</h4>
-                    <p class="text-sm">The gating network learns to route inputs to the most suitable experts based on the input characteristics. It outputs probability weights for each expert.</p>
+                    <h4 class="font-semibold text-neural-blue mb-2">1. Gating Network</h4>
+                    <p class="text-sm">Analyzes the input and assigns weights to each expert based on input characteristics, determining which experts are best suited to process it.</p>
                 </div>
                 <div>
-                    <h4 class="font-semibold text-purple-400 mb-2">2. Expert Selection</h4>
-                    <p class="text-sm">Top-K gating selects only the highest-weighted experts to process the input, reducing computational cost while maintaining performance.</p>
+                    <h4 class="font-semibold text-neural-purple mb-2">2. Expert Selection</h4>
+                    <p class="text-sm">Selects the top-K experts with the highest weights, optimizing efficiency by using only a subset of the network's capacity.</p>
                 </div>
                 <div>
-                    <h4 class="font-semibold text-green-400 mb-2">3. Expert Processing</h4>
-                    <p class="text-sm">Each selected expert processes the input through its specialized neural network, generating expert-specific outputs.</p>
+                    <h4 class="font-semibold text-neural-teal mb-2">3. Expert Processing</h4>
+                    <p class="text-sm">Each selected expert processes the input through its own neural network, producing specialized outputs.</p>
                 </div>
                 <div>
                     <h4 class="font-semibold text-yellow-400 mb-2">4. Output Combination</h4>
-                    <p class="text-sm">Expert outputs are weighted by their gating scores and combined to produce the final network output.</p>
+                    <p class="text-sm">Combines the expert outputs, weighted by their gating scores, to produce the final network output.</p>
                 </div>
             </div>
         </div>
@@ -196,17 +269,22 @@
                 this.topK = 2;
                 this.learningRate = 0.01;
                 this.iterations = 0;
+                this.lossHistory = [];
+                this.lossChart = null;
+                this.currentInput = null;
+                this.currentGatingWeights = null;
+                this.currentExpertOutputs = null;
+                this.currentResult = null;
                 
                 this.initializeWeights();
+                this.initializeCharts();
                 this.updateDisplay();
             }
 
             initializeWeights() {
-                // Gating network weights
                 this.gatingWeights = this.randomMatrix(this.inputSize, this.expertCount);
                 this.gatingBias = this.randomVector(this.expertCount);
                 
-                // Expert networks
                 this.experts = [];
                 for (let i = 0; i < this.expertCount; i++) {
                     this.experts.push({
@@ -214,7 +292,7 @@
                         b1: this.randomVector(this.expertHiddenSize),
                         w2: this.randomMatrix(this.expertHiddenSize, this.outputSize),
                         b2: this.randomVector(this.outputSize),
-                        specialization: i / this.expertCount // Each expert specializes in different input ranges
+                        specialization: i / this.expertCount
                     });
                 }
             }
@@ -258,23 +336,20 @@
             }
 
             gatingNetwork(input) {
-                // Compute gating scores properly
                 const gatingScores = [];
                 for (let i = 0; i < this.expertCount; i++) {
-                    let score = this.gatingBias[i];
+                    let score = 0;
                     for (let j = 0; j < this.inputSize; j++) {
                         score += this.gatingWeights[j][i] * input[j];
                     }
+                    score += this.gatingBias[i];
                     gatingScores.push(score);
                 }
-                
                 return this.softmax(gatingScores);
             }
 
             expertForward(expertIndex, input) {
                 const expert = this.experts[expertIndex];
-                
-                // Hidden layer
                 const hidden = [];
                 for (let i = 0; i < this.expertHiddenSize; i++) {
                     let sum = expert.b1[i];
@@ -283,8 +358,6 @@
                     }
                     hidden[i] = this.relu(sum);
                 }
-                
-                // Output layer
                 const output = [];
                 for (let i = 0; i < this.outputSize; i++) {
                     let sum = expert.b2[i];
@@ -293,46 +366,93 @@
                     }
                     output[i] = sum;
                 }
-                
                 return { hidden, output };
             }
 
-            forward(input) {
-                // Get gating weights
+            forward(input, topK = this.topK) {
                 const gatingWeights = this.gatingNetwork(input);
-                
-                // Select top-K experts
                 const expertIndices = gatingWeights
                     .map((weight, index) => ({ weight, index }))
                     .sort((a, b) => b.weight - a.weight)
-                    .slice(0, this.topK);
-                
-                // Normalize selected weights
+                    .slice(0, topK);
                 const totalWeight = expertIndices.reduce((sum, expert) => sum + expert.weight, 0);
                 const normalizedWeights = expertIndices.map(expert => ({
                     ...expert,
                     weight: expert.weight / totalWeight
                 }));
-                
-                // Get expert outputs
                 const expertOutputs = normalizedWeights.map(({ index }) => 
                     this.expertForward(index, input)
                 );
-                
-                // Combine expert outputs
                 const finalOutput = new Array(this.outputSize).fill(0);
                 normalizedWeights.forEach(({ weight }, i) => {
                     expertOutputs[i].output.forEach((val, j) => {
                         finalOutput[j] += weight * val;
                     });
                 });
-                
                 return {
                     gatingWeights,
                     selectedExperts: normalizedWeights,
                     expertOutputs,
                     finalOutput
                 };
+            }
+
+            forwardAllExperts(input) {
+                const gatingWeights = this.gatingNetwork(input);
+                const expertOutputs = this.experts.map((_, index) => 
+                    this.expertForward(index, input)
+                );
+                const finalOutput = new Array(this.outputSize).fill(0);
+                gatingWeights.forEach((weight, i) => {
+                    expertOutputs[i].output.forEach((val, j) => {
+                        finalOutput[j] += weight * val;
+                    });
+                });
+                return { gatingWeights, expertOutputs, finalOutput };
+            }
+
+            runGatingOnly(input) {
+                this.currentInput = input;
+                this.currentGatingWeights = this.gatingNetwork(input);
+                this.currentExpertOutputs = null;
+                this.currentResult = null;
+                this.updateVisualization(input, { gatingWeights: this.currentGatingWeights, selectedExperts: [], finalOutput: [] });
+            }
+
+            runExpertsOnly(input) {
+                if (!this.currentGatingWeights) {
+                    this.runGatingOnly(input);
+                }
+                this.currentInput = input;
+                const expertIndices = this.currentGatingWeights
+                    .map((weight, index) => ({ weight, index }))
+                    .sort((a, b) => b.weight - a.weight)
+                    .slice(0, this.topK);
+                const totalWeight = expertIndices.reduce((sum, expert) => sum + expert.weight, 0);
+                const normalizedWeights = expertIndices.map(expert => ({
+                    ...expert,
+                    weight: expert.weight / totalWeight
+                }));
+                this.currentExpertOutputs = normalizedWeights.map(({ index }) => 
+                    this.expertForward(index, input)
+                );
+                this.currentResult = { gatingWeights: this.currentGatingWeights, selectedExperts: normalizedWeights, expertOutputs: this.currentExpertOutputs, finalOutput: [] };
+                this.updateVisualization(input, this.currentResult);
+            }
+
+            runCombineOnly(input) {
+                if (!this.currentExpertOutputs) {
+                    this.runExpertsOnly(input);
+                }
+                this.currentInput = input;
+                const finalOutput = new Array(this.outputSize).fill(0);
+                this.currentResult.selectedExperts.forEach(({ weight }, i) => {
+                    this.currentExpertOutputs[i].output.forEach((val, j) => {
+                        finalOutput[j] += weight * val;
+                    });
+                });
+                this.currentResult = { ...this.currentResult, finalOutput };
+                this.updateVisualization(input, this.currentResult);
             }
 
             generateInput(pattern) {
@@ -362,36 +482,36 @@
                 for (let iter = 0; iter < iterations; iter++) {
                     const result = this.forward(input);
                     const loss = this.computeLoss(result.finalOutput, target);
+                    this.lossHistory.push(loss);
+                    if (this.lossHistory.length > 50) this.lossHistory.shift();
                     
-                    // Simple gradient descent (simplified for demo)
                     const error = result.finalOutput.map((pred, i) => pred - target[i]);
-                    
-                    // Update expert weights
                     result.selectedExperts.forEach(({ index, weight }, i) => {
                         const expert = this.experts[index];
                         const expertOutput = result.expertOutputs[i];
-                        
-                        // Update output layer
                         for (let j = 0; j < this.outputSize; j++) {
                             for (let k = 0; k < this.expertHiddenSize; k++) {
                                 expert.w2[k][j] -= this.learningRate * error[j] * weight * expertOutput.hidden[k];
                             }
                             expert.b2[j] -= this.learningRate * error[j] * weight;
                         }
-                        
-                        // Update hidden layer (simplified)
                         for (let j = 0; j < this.expertHiddenSize; j++) {
                             for (let k = 0; k < this.inputSize; k++) {
                                 const hiddenError = error.reduce((sum, e, idx) => 
                                     sum + e * expert.w2[j][idx], 0);
-                                if (expertOutput.hidden[j] > 0) { // ReLU derivative
+                                if (expertOutput.hidden[j] > 0) {
                                     expert.w1[k][j] -= this.learningRate * hiddenError * weight * input[k] * 0.1;
                                 }
                             }
                         }
                     });
-                    
                     this.iterations++;
+                    this.currentInput = input;
+                    this.currentResult = result;
+                    this.currentGatingWeights = result.gatingWeights;
+                    this.currentExpertOutputs = result.expertOutputs;
+                    this.updateVisualization(input, result);
+                    this.updateLossChart();
                 }
             }
 
@@ -400,12 +520,59 @@
                     sum + Math.pow(pred - target[i], 2), 0) / predicted.length;
             }
 
+            initializeCharts() {
+                if (this.lossChart) {
+                    this.lossChart.destroy();
+                    this.lossChart = null;
+                }
+
+                const ctx = document.getElementById('lossChart').getContext('2d');
+                this.lossChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Training Loss',
+                            data: [],
+                            borderColor: '#FBBF24',
+                            backgroundColor: 'rgba(251, 191, 36, 0.2)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: { display: true, text: 'Loss', color: '#E5E7EB' },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            },
+                            x: {
+                                title: { display: true, text: 'Iteration', color: '#E5E7EB' },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            }
+                        },
+                        plugins: {
+                            legend: { labels: { color: '#E5E7EB' } }
+                        }
+                    }
+                });
+            }
+
+            updateLossChart() {
+                if (this.lossChart) {
+                    this.lossChart.data.labels = Array.from({length: this.lossHistory.length}, (_, i) => i + 1);
+                    this.lossChart.data.datasets[0].data = this.lossHistory;
+                    this.lossChart.update();
+                }
+            }
+
             updateDisplay() {
-                // Update expert count display
                 document.getElementById('expertCount').textContent = this.expertCount;
                 document.getElementById('topKCount').textContent = this.topK;
+                document.getElementById('learningRateValue').textContent = this.learningRate.toFixed(3);
                 
-                // Update parameter counts
                 const totalParams = this.getTotalParameters();
                 const activeParams = this.getActiveParameters();
                 const efficiency = ((totalParams - activeParams) / totalParams * 100).toFixed(1);
@@ -416,6 +583,9 @@
                 document.getElementById('iterations').textContent = this.iterations.toLocaleString();
                 
                 this.renderNetwork();
+                if (this.currentInput && this.currentResult) {
+                    this.updateVisualization(this.currentInput, this.currentResult);
+                }
             }
 
             getTotalParameters() {
@@ -444,20 +614,28 @@
             }
 
             renderInputLayer() {
-                const container = document.getElementById('inputLayer');
-                container.innerHTML = '';
+                const canvas = document.getElementById('inputCanvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+                
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const nodeRadius = 20;
+                const spacing = canvas.height / (this.inputSize + 1);
                 
                 for (let i = 0; i < this.inputSize; i++) {
-                    const node = document.createElement('div');
-                    node.className = 'flex items-center space-x-3 p-3 bg-slate-700/30 rounded-lg border border-blue-500/30';
-                    node.innerHTML = `
-                        <div class="w-4 h-4 bg-blue-400 rounded-full animate-pulse-slow"></div>
-                        <div class="text-sm">
-                            <div class="text-gray-300">Input ${i + 1}</div>
-                            <div class="text-blue-400 font-mono text-xs" id="input-${i}">0.000</div>
-                        </div>
-                    `;
-                    container.appendChild(node);
+                    const y = (i + 1) * spacing;
+                    ctx.beginPath();
+                    ctx.arc(50, y, nodeRadius, 0, 2 * Math.PI);
+                    ctx.fillStyle = '#3B82F6';
+                    ctx.fill();
+                    ctx.strokeStyle = '#E5E7EB';
+                    ctx.stroke();
+                    ctx.fillStyle = '#E5E7EB';
+                    ctx.font = '12px sans-serif';
+                    ctx.textAlign = 'left';
+                    const value = this.currentInput ? this.currentInput[i].toFixed(3) : '0.000';
+                    ctx.fillText(`Input ${i + 1}: ${value}`, 90, y + 5);
                 }
             }
 
@@ -466,122 +644,172 @@
                 container.innerHTML = '';
                 
                 for (let i = 0; i < this.expertCount; i++) {
+                    const isActive = this.currentResult?.selectedExperts.some(expert => expert.index === i);
                     const expert = document.createElement('div');
-                    expert.className = 'p-3 bg-slate-700/30 rounded-lg border border-cyan-500/30';
+                    expert.className = `p-3 bg-slate-700/30 rounded-lg border border-neural-teal/30 node-animation ${isActive ? 'active-expert' : ''}`;
                     expert.innerHTML = `
                         <div class="flex items-center justify-between mb-2">
                             <div class="flex items-center space-x-2">
-                                <div class="w-3 h-3 bg-cyan-400 rounded-full" id="expert-indicator-${i}"></div>
-                                <span class="text-sm font-medium text-cyan-400">Expert ${i + 1}</span>
+                                <div class="w-3 h-3 ${isActive ? 'bg-neural-teal animate-bounce-slow' : 'bg-gray-600'} rounded-full" id="expert-indicator-${i}"></div>
+                                <span class="text-sm font-medium text-neural-teal">Expert ${i + 1}</span>
                             </div>
-                            <div class="text-xs text-gray-400" id="expert-weight-${i}">0.00</div>
+                            <div class="text-xs ${isActive ? 'text-neural-teal font-bold' : 'text-gray-300'}" id="expert-weight-${i}">${this.currentGatingWeights ? this.currentGatingWeights[i].toFixed(3) : '0.00'}</div>
                         </div>
-                        <div class="text-xs text-gray-500">
+                        <div class="text-xs text-gray-400">
                             Hidden: ${this.expertHiddenSize} nodes | Params: ${this.experts[i].w1.flat().length + this.experts[i].b1.length + this.experts[i].w2.flat().length + this.experts[i].b2.length}
                         </div>
                     `;
                     container.appendChild(expert);
                 }
+
+                const canvas = document.getElementById('gatingCanvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+                
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const barWidth = canvas.width / (this.expertCount * 2);
+                
+                for (let i = 0; i < this.expertCount; i++) {
+                    const weight = this.currentGatingWeights ? this.currentGatingWeights[i] : 0;
+                    const height = weight * canvas.height;
+                    ctx.fillStyle = this.currentResult?.selectedExperts.some(expert => expert.index === i) ? '#8B5CF6' : '#FBBF24';
+                    ctx.fillRect(i * 2 * barWidth + barWidth / 2, canvas.height - height, barWidth, height);
+                    ctx.fillStyle = '#E5E7EB';
+                    ctx.font = '12px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`E${i + 1}`, i * 2 * barWidth + barWidth, canvas.height - 10);
+                }
             }
 
             renderOutputLayer() {
-                const container = document.getElementById('outputLayer');
-                container.innerHTML = '';
+                const canvas = document.getElementById('outputCanvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+                
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const nodeRadius = 20;
+                const spacing = canvas.height / (this.outputSize + 1);
                 
                 for (let i = 0; i < this.outputSize; i++) {
-                    const node = document.createElement('div');
-                    node.className = 'flex items-center space-x-3 p-3 bg-slate-700/30 rounded-lg border border-green-500/30';
-                    node.innerHTML = `
-                        <div class="w-4 h-4 bg-green-400 rounded-full animate-pulse-slow"></div>
-                        <div class="text-sm">
-                            <div class="text-gray-300">Output ${i + 1}</div>
-                            <div class="text-green-400 font-mono text-xs" id="output-${i}">0.000</div>
-                        </div>
-                    `;
-                    container.appendChild(node);
+                    const y = (i + 1) * spacing;
+                    ctx.beginPath();
+                    ctx.arc(50, y, nodeRadius, 0, 2 * Math.PI);
+                    ctx.fillStyle = '#14B8A6';
+                    ctx.fill();
+                    ctx.strokeStyle = '#E5E7EB';
+                    ctx.stroke();
+                    ctx.fillStyle = '#E5E7EB';
+                    ctx.font = '12px sans-serif';
+                    ctx.textAlign = 'left';
+                    const value = this.currentResult?.finalOutput[i] ? this.currentResult.finalOutput[i].toFixed(3) : '0.000';
+                    ctx.fillText(`Output ${i + 1}: ${value}`, 90, y + 5);
                 }
             }
 
             updateVisualization(input, result) {
-                // Update input display
-                input.forEach((val, i) => {
-                    const element = document.getElementById(`input-${i}`);
-                    if (element) element.textContent = val.toFixed(3);
-                });
-                
+                this.currentInput = input;
+                this.currentResult = result;
+                this.currentGatingWeights = result.gatingWeights;
+                this.currentExpertOutputs = result.expertOutputs;
+
                 document.getElementById('currentInput').textContent = 
-                    '[' + input.map(x => x.toFixed(3)).join(', ') + ']';
+                    '[' + (input ? input.map(x => x.toFixed(3)).join(', ') : '') + ']';
                 
-                // Update gating weights
                 const gatingContainer = document.getElementById('gatingWeights');
                 gatingContainer.innerHTML = '';
-                result.gatingWeights.forEach((weight, i) => {
-                    const div = document.createElement('div');
-                    div.className = 'flex justify-between text-xs';
-                    div.innerHTML = `
-                        <span>Expert ${i + 1}:</span>
-                        <span class="font-mono">${weight.toFixed(3)}</span>
-                    `;
-                    gatingContainer.appendChild(div);
-                });
-                
-                // Update expert indicators
-                for (let i = 0; i < this.expertCount; i++) {
-                    const indicator = document.getElementById(`expert-indicator-${i}`);
-                    const weightDisplay = document.getElementById(`expert-weight-${i}`);
-                    const isActive = result.selectedExperts.some(expert => expert.index === i);
-                    
-                    if (indicator) {
-                        indicator.className = isActive ? 
-                            'w-3 h-3 bg-cyan-400 rounded-full animate-bounce-slow' :
-                            'w-3 h-3 bg-gray-600 rounded-full';
-                    }
-                    
-                    if (weightDisplay) {
-                        weightDisplay.textContent = result.gatingWeights[i].toFixed(3);
-                        weightDisplay.className = isActive ? 
-                            'text-xs text-cyan-400 font-bold' :
-                            'text-xs text-gray-400';
-                    }
+                if (result.gatingWeights) {
+                    result.gatingWeights.forEach((weight, i) => {
+                        const div = document.createElement('div');
+                        div.className = 'flex justify-between text-xs';
+                        div.innerHTML = `
+                            <span>Expert ${i + 1}:</span>
+                            <span class="font-mono">${weight.toFixed(3)}</span>
+                        `;
+                        gatingContainer.appendChild(div);
+                    });
                 }
-                
-                // Update output display
-                result.finalOutput.forEach((val, i) => {
-                    const element = document.getElementById(`output-${i}`);
-                    if (element) element.textContent = val.toFixed(3);
-                });
-                
+
+                const expertOutputsContainer = document.getElementById('expertOutputs');
+                expertOutputsContainer.innerHTML = '';
+                if (result.expertOutputs) {
+                    result.expertOutputs.forEach((output, i) => {
+                        const div = document.createElement('div');
+                        div.className = 'flex justify-between text-xs';
+                        div.innerHTML = `
+                            <span>Expert ${result.selectedExperts[i]?.index + 1 || i + 1}:</span>
+                            <span class="font-mono">[${output.output.map(x => x.toFixed(3)).join(', ')}]</span>
+                        `;
+                        expertOutputsContainer.appendChild(div);
+                    });
+                }
+
                 document.getElementById('finalOutput').textContent = 
-                    '[' + result.finalOutput.map(x => x.toFixed(3)).join(', ') + ']';
+                    result.finalOutput.length ? '[' + result.finalOutput.map(x => x.toFixed(3)).join(', ') + ']' : '[]';
                 
-                const activeExpertNames = result.selectedExperts
-                    .map(expert => `Expert ${expert.index + 1} (${(expert.weight * 100).toFixed(1)}%)`)
-                    .join(', ');
+                const activeExpertNames = result.selectedExperts.length
+                    ? result.selectedExperts
+                        .map(expert => `Expert ${expert.index + 1} (${(expert.weight * 100).toFixed(1)}%)`)
+                        .join(', ')
+                    : 'None';
                 document.getElementById('activeExperts').textContent = activeExpertNames;
-                
-                // Calculate and display loss (using dummy target for demo)
+
                 const dummyTarget = [0.5, 0.5];
-                const loss = this.computeLoss(result.finalOutput, dummyTarget);
+                const loss = result.finalOutput.length ? this.computeLoss(result.finalOutput, dummyTarget) : 0;
                 document.getElementById('currentLoss').textContent = loss.toFixed(3);
+
+                // Update comparison mode
+                if (input) {
+                    const topKResult = this.forward(input, this.topK);
+                    const allResult = this.forwardAllExperts(input);
+                    document.getElementById('topKParams').textContent = this.getActiveParameters().toLocaleString();
+                    document.getElementById('topKOutput').textContent = '[' + topKResult.finalOutput.map(x => x.toFixed(3)).join(', ') + ']';
+                    document.getElementById('topKLoss').textContent = this.computeLoss(topKResult.finalOutput, dummyTarget).toFixed(3);
+                    document.getElementById('allParams').textContent = this.getTotalParameters().toLocaleString();
+                    document.getElementById('allOutput').textContent = '[' + allResult.finalOutput.map(x => x.toFixed(3)).join(', ') + ']';
+                    document.getElementById('allLoss').textContent = this.computeLoss(allResult.finalOutput, dummyTarget).toFixed(3);
+                }
+
+                this.renderNetwork();
+            }
+
+            destroy() {
+                if (this.lossChart) {
+                    this.lossChart.destroy();
+                    this.lossChart = null;
+                }
             }
         }
 
-        // Initialize the network
         let moe = new MixtureOfExperts();
 
-        // Event listeners
         document.getElementById('numExperts').addEventListener('input', (e) => {
             const count = parseInt(e.target.value);
+            moe.destroy();
             moe = new MixtureOfExperts(4, count, 8, 2);
             moe.topK = Math.min(moe.topK, count);
+            moe.learningRate = parseFloat(document.getElementById('learningRate').value);
             document.getElementById('topK').max = count;
             if (parseInt(document.getElementById('topK').value) > count) {
                 document.getElementById('topK').value = count;
+                moe.topK = count;
             }
+            moe.updateDisplay();
+            document.getElementById('runForward').click();
         });
 
         document.getElementById('topK').addEventListener('input', (e) => {
             moe.topK = parseInt(e.target.value);
+            moe.updateDisplay();
+            if (moe.currentInput) {
+                const result = moe.forward(moe.currentInput);
+                moe.updateVisualization(moe.currentInput, result);
+            }
+        });
+
+        document.getElementById('learningRate').addEventListener('input', (e) => {
+            moe.learningRate = parseFloat(e.target.value);
             moe.updateDisplay();
         });
 
@@ -592,20 +820,41 @@
             moe.updateVisualization(input, result);
         });
 
+        document.getElementById('runGating').addEventListener('click', () => {
+            const pattern = document.getElementById('inputPattern').value;
+            const input = moe.generateInput(pattern);
+            moe.runGatingOnly(input);
+        });
+
+        document.getElementById('runExperts').addEventListener('click', () => {
+            const pattern = document.getElementById('inputPattern').value;
+            const input = moe.generateInput(pattern);
+            moe.runExpertsOnly(input);
+        });
+
+        document.getElementById('runCombine').addEventListener('click', () => {
+            const pattern = document.getElementById('inputPattern').value;
+            const input = moe.generateInput(pattern);
+            moe.runCombineOnly(input);
+        });
+
         document.getElementById('trainNetwork').addEventListener('click', () => {
             const pattern = document.getElementById('inputPattern').value;
             const input = moe.generateInput(pattern);
-            const target = [0.7, 0.3]; // Example target
-            
+            const target = [0.7, 0.3];
             moe.train(input, target, 5);
-            const result = moe.forward(input);
-            moe.updateVisualization(input, result);
-            moe.updateDisplay();
         });
 
         document.getElementById('resetNetwork').addEventListener('click', () => {
+            moe.destroy();
             moe.initializeWeights();
             moe.iterations = 0;
+            moe.lossHistory = [];
+            moe.currentInput = null;
+            moe.currentGatingWeights = null;
+            moe.currentExpertOutputs = null;
+            moe.currentResult = null;
+            moe.initializeCharts();
             moe.updateDisplay();
         });
 
